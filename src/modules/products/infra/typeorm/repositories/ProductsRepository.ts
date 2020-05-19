@@ -21,21 +21,70 @@ class ProductsRepository implements IProductsRepository {
     price,
     quantity,
   }: ICreateProductDTO): Promise<Product> {
-    // TODO
+    const product = this.ormRepository.create({
+      name,
+      price,
+      quantity,
+    });
+
+    await this.ormRepository.save(product);
+
+    return product;
   }
 
   public async findByName(name: string): Promise<Product | undefined> {
-    // TODO
+    const product = await this.ormRepository.findOne({
+      where: { name },
+    });
+
+    return product;
   }
 
   public async findAllById(products: IFindProducts[]): Promise<Product[]> {
-    // TODO
+    const ids = products.map(product => product.id);
+
+    const productsById = await this.ormRepository.find({
+      where: {
+        id: In(ids),
+      },
+    });
+
+    return productsById;
   }
 
   public async updateQuantity(
     products: IUpdateProductsQuantityDTO[],
   ): Promise<Product[]> {
-    // TODO
+    const ids = products.map(product => product.id);
+
+    const productsById = await this.ormRepository.find({
+      where: {
+        id: In(ids),
+      },
+    });
+
+    const updatedProducts = productsById.map(product => {
+      const comparedProduct = products.find(
+        inputProduct => inputProduct.id === product.id,
+      );
+
+      if (!comparedProduct) {
+        throw new Error('Invalid Product ID');
+      }
+
+      const newQuantity = product.quantity - comparedProduct.quantity;
+
+      const updatedProduct = {
+        ...product,
+        quantity: newQuantity,
+      };
+
+      return updatedProduct;
+    });
+
+    await this.ormRepository.save(updatedProducts);
+
+    return updatedProducts;
   }
 }
 
